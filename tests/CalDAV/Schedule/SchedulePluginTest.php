@@ -1561,6 +1561,56 @@ ICS
         return $method->invoke($this->plugin, $calendar);
     }
 
+    #[\PHPUnit\Framework\Attributes\DataProvider('movedInvitationDeliveryCases')]
+    function testShouldOnlyLoadMovedInvitationForWritableTeamMember($method, $access, $owner, $sender, $recipient, $found) {
+        $calendar = $this->createStub(\ESN\CalDAV\SharedCalendar::class);
+        $calendar->method('getName')->willReturn('shared-team');
+        $calendar->method('getShareAccess')->willReturn($access);
+        $calendar->method('getOwner')->willReturn($owner);
+        $server = new Server([
+            new SimpleCollection('calendars', [
+                new CalendarHomeTestDouble('alice', [$calendar]),
+                new TeamCalendarHomeTestDouble('team-calendar-1', ['event-team' => 'event.ics'], [
+                    'event.ics' => $this->newCalendarObject('event-team', 'bob@example.org', 'team-calendar-1'),
+                ]),
+            ]),
+        ]);
+        $this->plugin->initialize($server);
+        $message = $this->newReplyMessage('event-team', $recipient);
+        $message->method = $method;
+        $message->sender = $sender;
+
+        $loader = new \ReflectionMethod(Plugin::class, 'loadCalendarObjectForDelivery');
+        $loader->setAccessible(true);
+        $result = $loader->invoke($this->plugin, 'calendars/alice', $message);
+
+        $this->assertSame($found, $result[0] !== null);
+        if ($found) {
+            $this->assertSame('event-team', (string) $result[2]->VEVENT->UID);
+        } else {
+            $this->assertSame([null, null, null], $result);
+        }
+    }
+
+    static function movedInvitationDeliveryCases(): array {
+        $write = \ESN\DAV\Sharing\Plugin::ACCESS_READWRITE;
+        $admin = \ESN\DAV\Sharing\Plugin::ACCESS_ADMINISTRATION;
+        $read = \ESN\DAV\Sharing\Plugin::ACCESS_READ;
+        $team = 'principals/team-calendars/team-calendar-1';
+        $bob = 'mailto:bob@example.org';
+        $alice = 'mailto:alice@example.org';
+        return [
+            'request' => ['REQUEST', $write, $team, $bob, $alice, true],
+            'cancel' => ['CANCEL', $write, $team, $bob, $alice, true],
+            'administrator' => ['REQUEST', $admin, $team, $bob, $alice, true],
+            'read-only member' => ['REQUEST', $read, $team, $bob, $alice, false],
+            'personal delegation' => ['REQUEST', $write, 'principals/users/team-calendar-1', $bob, $alice, false],
+            'different organizer' => ['REQUEST', $write, $team, 'mailto:other@example.org', $alice, false],
+            'different attendee' => ['REQUEST', $write, $team, $bob, 'mailto:other@example.org', false],
+            'reply' => ['REPLY', $write, $team, $alice, $bob, false],
+        ];
+    }
+
     private function initializePluginWithTeamCalendar(string $teamCalendarId, string $eventUid, string $calendarData, ?array $teamCalendarPrivileges = null): void {
         $server = new Server([
             new SimpleCollection('calendars', [

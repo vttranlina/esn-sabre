@@ -34,8 +34,8 @@ use Sabre\VObject\Reader;
 class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
     private const DEFAULT_REPLY_PROPAGATION_THRESHOLD = 200;
     private const TEAM_CALENDAR_ID_PROPERTY = 'X-OPENPAAS-TEAM-CALENDAR-ID';
-    private const PRESERVABLE_RECIPIENT_LOCAL_PROPERTIES = ['VALARM', 'TRANSP', 'CLASS'];
-    private const PRESERVABLE_RECIPIENT_LOCAL_PROPERTIES_WITH_MANAGED_ALARMS = ['TRANSP', 'CLASS'];
+    private const PRESERVABLE_RECIPIENT_LOCAL_PROPERTIES = ['VALARM', 'TRANSP', 'CLASS', self::TEAM_CALENDAR_ID_PROPERTY];
+    private const PRESERVABLE_RECIPIENT_LOCAL_PROPERTIES_WITH_MANAGED_ALARMS = ['TRANSP', 'CLASS', self::TEAM_CALENDAR_ID_PROPERTY];
     private const FORBIDDEN_ATTENDEE_CHANGE_PROPERTIES = ['DTSTART', 'DTEND', 'LOCATION', 'SUMMARY', 'ORGANIZER'];
     private const PUBLIC_AGENDA_METADATA_PROPERTIES = ['X-PUBLICLY-CREATED', 'X-PUBLICLY-CREATOR', 'X-PUBLICLY-DELETED', 'X-PUBLICLY-CANCELLED-BY', 'X-OPENPAAS-BOOKING-LINK'];
     private const ENFORCE_RFC_6638_ENV = 'SABRE_ENFORCE_RFC_6638';
@@ -144,12 +144,46 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
 
     private function loadCalendarObjectForDelivery(string $homePath, ITip\Message $iTipMessage): array {
         $result = $this->loadExistingCalendarObject($homePath, $iTipMessage->uid);
+        if (!$result[0] && in_array($iTipMessage->method, ['REQUEST', 'CANCEL'], true) && $iTipMessage->recipient) {
+            return $this->loadMovedTeamCalendarInvitation($homePath, $iTipMessage);
+        }
         if ($result[0] || $iTipMessage->method !== 'REPLY' || !$iTipMessage->recipient) {
             return $result;
         }
 
         $teamCalendarId = $this->extractTeamCalendarIdProperty($iTipMessage->message);
         return $teamCalendarId ? $this->loadWritableTeamCalendarObject($teamCalendarId, $iTipMessage->uid, $iTipMessage->recipient) : [null, null, null];
+    }
+
+    private function loadMovedTeamCalendarInvitation(string $homePath, ITip\Message $iTipMessage): array {
+        $home = $this->server->tree->getNodeForPath($homePath);
+        foreach ($home->getChildren() as $calendar) {
+            // Scheduling uses the recipient's membership; the organizer need not be a team member.
+            if (!$calendar instanceof \ESN\CalDAV\SharedCalendar || !in_array($calendar->getShareAccess(), [
+                \ESN\DAV\Sharing\Plugin::ACCESS_READWRITE,
+                \ESN\DAV\Sharing\Plugin::ACCESS_ADMINISTRATION,
+            ], true)) {
+                continue;
+            }
+            $owner = $calendar->getOwner();
+            if (!Utils::isTeamCalendarFromPrincipal($owner)) {
+                continue;
+            }
+
+            $result = $this->loadTeamCalendarObject(basename($owner), $iTipMessage->uid, $iTipMessage->sender);
+            if (!$result[0]) {
+                continue;
+            }
+            // A matching UID in a shared collection must also be this recipient's invitation.
+            foreach ($result[2]->VEVENT as $event) {
+                if (CalendarObjectHelper::attendeePartStat($event, $iTipMessage->recipient) !== null) {
+                    return $result;
+                }
+            }
+            $result[2]->destroy();
+        }
+
+        return [null, null, null];
     }
 
     /**
