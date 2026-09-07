@@ -254,10 +254,8 @@ class AMQPSchedulePlugin extends Plugin {
             $oldObj = Reader::read($this->currentOldMessage);
         }
 
-        $isAttendeeCalendarWrite = !$isTeamCalendar && $this->isAttendeeSchedulingObject($oldObj ?? $vCal, $actorAddresses);
-        if ($this->shouldEnableEmailValarmRecipientScheduling() && $this->ensureValarmUids($vCal, $isAttendeeCalendarWrite)) {
-            $modified = true;
-        }
+        $isAttendeeCalendarWrite = $this->isAttendeeCalendarWrite($oldObj ?? $vCal, $isTeamCalendar, $actorAddresses);
+        $this->ensureManagedEmailValarmUids($vCal, $isAttendeeCalendarWrite, $modified);
 
         if ($oldObj && $this->shouldValidateAttendeeSchedulingObjectChange($request->getPath(), $isTeamCalendar)) {
             $this->assertAllowedAttendeeSchedulingObjectChange($oldObj, $vCal, $actorAddresses);

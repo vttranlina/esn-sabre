@@ -122,9 +122,7 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
         if ($currentObject) {
             $this->normalizeIncomingReplyMessage($iTipMessage, $currentObject);
         }
-        if ($iTipMessage->method === 'REQUEST' && $this->shouldEnableEmailValarmRecipientScheduling()) {
-            $this->ensureValarmUids($iTipMessage->message, false);
-        }
+        $this->ensureOrganizerValarmUidsForRequest($iTipMessage);
 
         $broker = new ITip\Broker();
         $newObject = $broker->processMessage($iTipMessage, $currentObject);
@@ -410,6 +408,26 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
         return Env::getBoolean(self::EMAIL_VALARM_RECIPIENT_SCHEDULING_ENV, true);
     }
 
+    private function ensureOrganizerValarmUidsForRequest(ITip\Message $iTipMessage): void {
+        if ($iTipMessage->method !== 'REQUEST') {
+            return;
+        }
+        if (!$this->shouldEnableEmailValarmRecipientScheduling()) {
+            return;
+        }
+
+        $this->ensureValarmUids($iTipMessage->message, false);
+    }
+
+    protected function ensureManagedEmailValarmUids(VCalendar $calendarObject, bool $isAttendeeCalendarWrite, bool &$modified): void {
+        if (!$this->shouldEnableEmailValarmRecipientScheduling()) {
+            return;
+        }
+        if ($this->ensureValarmUids($calendarObject, $isAttendeeCalendarWrite)) {
+            $modified = true;
+        }
+    }
+
     protected function ensureValarmUids(VCalendar $calendarObject, bool $isAttendeeCalendarWrite): bool {
         $modified = false;
 
@@ -439,15 +457,25 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
         $newEmailAlarmUids = array_filter(array_map(fn ($alarm) => isset($alarm->UID) ? $alarm->UID->getValue() : null, $newEmailAlarms));
 
         foreach ($oldEvent->select('VALARM') as $oldAlarm) {
-            $oldAlarmUid = isset($oldAlarm->UID) ? $oldAlarm->UID->getValue() : null;
-            if ($this->isEmailAlarm($oldAlarm)
-                && (str_starts_with($oldAlarmUid ?? '', self::ORGANIZER_MANAGED_VALARM_UID_PREFIX)
-                    || in_array($oldAlarmUid, $newEmailAlarmUids, true))) {
+            if ($this->shouldRemoveOldRecipientEmailAlarm($oldAlarm, $newEmailAlarmUids)) {
                 continue;
             }
 
             $newEvent->add(clone $oldAlarm);
         }
+    }
+
+    private function shouldRemoveOldRecipientEmailAlarm($alarm, array $newEmailAlarmUids): bool {
+        if (!$this->isEmailAlarm($alarm)) {
+            return false;
+        }
+
+        $alarmUid = isset($alarm->UID) ? $alarm->UID->getValue() : null;
+        if (str_starts_with($alarmUid ?? '', self::ORGANIZER_MANAGED_VALARM_UID_PREFIX)) {
+            return true;
+        }
+
+        return in_array($alarmUid, $newEmailAlarmUids, true);
     }
 
     private function isEmailAlarm($alarm): bool {
@@ -523,10 +551,8 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
             $oldObj = null;
         }
 
-        $isAttendeeCalendarWrite = !$isTeamCalendar && $this->isAttendeeSchedulingObject($oldObj ?? $vCal, $actorAddresses);
-        if ($this->shouldEnableEmailValarmRecipientScheduling() && $this->ensureValarmUids($vCal, $isAttendeeCalendarWrite)) {
-            $modified = true;
-        }
+        $isAttendeeCalendarWrite = $this->isAttendeeCalendarWrite( $oldObj ?? $vCal, $isTeamCalendar, $actorAddresses );
+        $this->ensureManagedEmailValarmUids($vCal, $isAttendeeCalendarWrite, $modified);
 
         if ($oldObj && $this->shouldValidateAttendeeSchedulingObjectChange($request->getPath(), $isTeamCalendar)) {
             // RFC 6638 permits attendee-local updates, but not organizer-controlled event fields.
@@ -576,6 +602,16 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
         }
 
         return $hasOrganizer && $isAttendee;
+    }
+
+    protected function isAttendeeCalendarWrite(VCalendar $calendarObject, bool $isTeamCalendar, array $actorAddresses): bool
+    {
+        // Team calendar changes are organizer-managed even when the connected member is an attendee.
+        if ($isTeamCalendar) {
+            return false;
+        }
+
+        return $this->isAttendeeSchedulingObject($calendarObject, $actorAddresses);
     }
 
     private function shouldEnforceRfc6638(): bool {

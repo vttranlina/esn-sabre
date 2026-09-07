@@ -774,6 +774,13 @@ ICS
         $this->assertEquals($forgedOrganizerUid, $alarms[2]->UID->getValue());
     }
 
+    function testShouldTreatTeamCalendarWriteAsOrganizerManaged() {
+        $calendar = Reader::read($this->newCalendarObject('event-team', 'bob@example.org'));
+
+        $this->assertTrue($this->invokeIsAttendeeCalendarWrite($calendar, false, ['mailto:alice@example.org']));
+        $this->assertFalse($this->invokeIsAttendeeCalendarWrite($calendar, true, ['mailto:alice@example.org']));
+    }
+
     function testShouldPreserveProvidedPersonalUIDOnOrganizerWrite() {
         $calendar = Reader::read(<<<'ICS'
 BEGIN:VCALENDAR
@@ -1300,6 +1307,13 @@ ICS
         $method->setAccessible(true);
 
         return $method->invoke($this->plugin, $calendarObject, $isAttendeeCalendarWrite);
+    }
+
+    private function invokeIsAttendeeCalendarWrite($calendarObject, bool $isTeamCalendar, array $actorAddresses): bool {
+        $method = new \ReflectionMethod(Plugin::class, 'isAttendeeCalendarWrite');
+        $method->setAccessible(true);
+
+        return $method->invoke($this->plugin, $calendarObject, $isTeamCalendar, $actorAddresses);
     }
 
     private function invokeShouldEnableEmailValarmRecipientScheduling(): bool {
