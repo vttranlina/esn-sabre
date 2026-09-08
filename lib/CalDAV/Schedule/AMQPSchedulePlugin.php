@@ -139,9 +139,22 @@ class AMQPSchedulePlugin extends Plugin {
                 'hasChange'  => $iTipMessage->hasChange,
                 'recipients' => [],
             ];
+        } elseif ($iTipMessage->method === 'REPLY') {
+            // The broker emits one REPLY per changed occurrence. Keep them in one
+            // delivery so replies for overrides are not discarded behind the master.
+            // Each broker REPLY already contains all VTIMEZONEs from the same source calendar.
+            $reply = Reader::read($this->pendingDeliveries[$key]['message']);
+            foreach ($iTipMessage->message->select('VEVENT') as $event) {
+                $reply->add(clone $event);
+            }
+            $this->pendingDeliveries[$key]['message'] = $reply->serialize();
+            $this->pendingDeliveries[$key]['hasChange'] = $this->pendingDeliveries[$key]['hasChange'] || $iTipMessage->hasChange;
+            $reply->destroy();
         }
 
-        $this->pendingDeliveries[$key]['recipients'][] = $iTipMessage->recipient;
+        if (!in_array($iTipMessage->recipient, $this->pendingDeliveries[$key]['recipients'], true)) {
+            $this->pendingDeliveries[$key]['recipients'][] = $iTipMessage->recipient;
+        }
 
         // Exact '1.0' (no description text) — short-circuits EventRealTimePlugin.schedule()
         // which checks scheduleStatus with a strict string comparison against the constant.
