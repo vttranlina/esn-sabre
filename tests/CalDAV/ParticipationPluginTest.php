@@ -19,7 +19,7 @@ class ParticipationPluginTest extends \ESN\DAV\ServerMock {
         $this->server->addPlugin($participationPlugin);
     }
 
-    function testProcessICalendarParticipation() {
+    function testProcessICalendarParticipationShouldOnlyUpdateFutureOverrides() {
         $oldCal = <<<ICS
 BEGIN:VCALENDAR
 VERSION:2.0
@@ -41,6 +41,15 @@ ORGANIZER;CN=Strunk:mailto:strunk@example.org
 ATTENDEE;CN=White;PARTSTAT=NEEDS-ACTION:mailto:robertocarlos@realmadrid.com
 ATTENDEE;CN=Two:mailto:two@example.org
 DTSTART:20140718T120000Z
+DURATION:PT1H
+END:VEVENT
+BEGIN:VEVENT
+UID:foobar
+RECURRENCE-ID:30250718T120000Z
+ORGANIZER;CN=Strunk:mailto:strunk@example.org
+ATTENDEE;CN=White;PARTSTAT=NEEDS-ACTION:mailto:robertocarlos@realmadrid.com
+ATTENDEE;CN=Two:mailto:two@example.org
+DTSTART:30250718T120000Z
 DURATION:PT1H
 END:VEVENT
 END:VCALENDAR
@@ -68,6 +77,15 @@ ATTENDEE;CN=Two:mailto:two@example.org
 DTSTART:20140718T120000Z
 DURATION:PT1H
 END:VEVENT
+BEGIN:VEVENT
+UID:foobar
+RECURRENCE-ID:30250718T120000Z
+ORGANIZER;CN=Strunk:mailto:strunk@example.org
+ATTENDEE;CN=White;PARTSTAT=NEEDS-ACTION:mailto:robertocarlos@realmadrid.com
+ATTENDEE;CN=Two:mailto:two@example.org
+DTSTART:30250718T120000Z
+DURATION:PT1H
+END:VEVENT
 END:VCALENDAR
 ICS;
 
@@ -93,12 +111,11 @@ ICS;
         
         $eventNode = \Sabre\VObject\Reader::read($data);
 
-        [$event1, $event2] = $this->extractMasterAndOverrideEvents($eventNode);
+        [$masterEvent, $pastOverride, $futureOverride] = $eventNode->select('VEVENT');
 
-        $this->assertNotNull($event1);
-        $this->assertNotNull($event2);
-        $this->assertEquals('ACCEPTED', $event1->ATTENDEE['PARTSTAT']->getValue());
-        $this->assertEquals('ACCEPTED', $event2->ATTENDEE['PARTSTAT']->getValue());
+        $this->assertEquals('ACCEPTED', $masterEvent->ATTENDEE['PARTSTAT']->getValue());
+        $this->assertEquals('NEEDS-ACTION', $pastOverride->ATTENDEE['PARTSTAT']->getValue());
+        $this->assertEquals('ACCEPTED', $futureOverride->ATTENDEE['PARTSTAT']->getValue());
     }
 
     function testProcessICalendarParticipationShouldIgnoreRecurringOverrideWithoutAttendees() {

@@ -70,8 +70,15 @@ class ParticipationPlugin extends ServerPlugin {
 
         if (isset($newInstances['master']) && isset($oldInstances['master'])) {
             if ($newInstances['master']['partstat'] && $oldInstances['master']['partstat'] && $newInstances['master']['partstat'] !== $oldInstances['master']['partstat']) {
+                $now = new \DateTimeImmutable();
+
                 foreach ($data->VEVENT as $vevent) {
                     if (!isset($vevent->{'RECURRENCE-ID'})) {
+                        continue;
+                    }
+
+                    // Past overrides keep their explicit response when the series response changes.
+                    if ($this->isPastRecurrence($vevent->{'RECURRENCE-ID'}, $now)) {
                         continue;
                     }
 
@@ -91,6 +98,16 @@ class ParticipationPlugin extends ServerPlugin {
         $data = $data->serialize();
 
         return;
+    }
+
+    private function isPastRecurrence($recurrenceId, $now) {
+        $recurrenceDateTime = $recurrenceId->getDateTime();
+
+        if (!$recurrenceId->hasTime()) {
+            return $recurrenceDateTime->format('Ymd') < $now->setTimezone($recurrenceDateTime->getTimezone())->format('Ymd');
+        }
+
+        return $recurrenceDateTime < $now;
     }
 
     /**
