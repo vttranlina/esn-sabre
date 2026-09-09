@@ -86,8 +86,19 @@ class CalendarDataNormalizer {
             return [null, null];
         }
 
-        $firstOccurence = $component->DTSTART->getDateTime()->getTimeStamp();
-        $lastOccurence = $this->calculateLastOccurrence($component, $vObject);
+        $firstOccurence = null;
+        $lastOccurence = null;
+
+        // An attendee calendar object may contain detached instances without a
+        // recurring master. Include every stored VEVENT in the denormalized
+        // range so MongoDB does not discard later instances before post-filtering.
+        foreach ($vObject->select('VEVENT') as $event) {
+            $start = $event->DTSTART->getDateTime()->getTimeStamp();
+            $end = $this->calculateLastOccurrence($event, $vObject);
+
+            $firstOccurence = $firstOccurence === null ? $start : min($firstOccurence, $start);
+            $lastOccurence = $lastOccurence === null ? $end : max($lastOccurence, $end);
+        }
 
         return [$firstOccurence, $lastOccurence];
     }

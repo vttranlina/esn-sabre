@@ -151,6 +151,56 @@ class CalendarQueryReportTest extends \ESN\DAV\ServerMock {
         $this->assertArrayHasKey('/calendars/54b64eadf6d7d8e41d263e0f/calendar1/event2.ics', $items);
     }
 
+    function testTimeRangeFilterReportReturnsLaterDetachedOccurrenceWithoutMaster() {
+        $calendarData = implode("\r\n", [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//test//EN',
+            'BEGIN:VEVENT',
+            'UID:detached-instances',
+            'RECURRENCE-ID:20260901T090000Z',
+            'DTSTART:20260901T090000Z',
+            'DTEND:20260901T100000Z',
+            'END:VEVENT',
+            'BEGIN:VEVENT',
+            'UID:detached-instances',
+            'RECURRENCE-ID:20260915T090000Z',
+            'DTSTART:20260915T090000Z',
+            'DTEND:20260915T100000Z',
+            'END:VEVENT',
+            'END:VCALENDAR'
+        ]) . "\r\n";
+        $this->caldavBackend->createCalendarObject($this->cal['id'], 'detached-instances.ics', $calendarData);
+
+        $body = implode("\n", [
+            '<?xml version="1.0" encoding="utf-8" ?>',
+            '<c:calendar-query xmlns:d="DAV:" xmlns:c="' . self::CALDAV_NS . '">',
+            '  <d:prop><c:calendar-data/></d:prop>',
+            '  <c:filter>',
+            '    <c:comp-filter name="VCALENDAR">',
+            '      <c:comp-filter name="VEVENT">',
+            '        <c:time-range start="20260915T080000Z" end="20260915T110000Z"/>',
+            '      </c:comp-filter>',
+            '    </c:comp-filter>',
+            '  </c:filter>',
+            '</c:calendar-query>'
+        ]);
+
+        $response = $this->reportRequest('/calendars/54b64eadf6d7d8e41d263e0f/calendar1', $body);
+
+        $this->assertEquals(207, $response->status);
+
+        $items = $this->parseMultiStatus($response->getBodyAsString());
+        $href = '/calendars/54b64eadf6d7d8e41d263e0f/calendar1/detached-instances.ics';
+        $this->assertArrayHasKey($href, $items);
+
+        $vObject = \Sabre\VObject\Reader::read($items[$href]['calendar-data']);
+        $recurrenceIds = array_map(function ($event) {
+            return (string) $event->{'RECURRENCE-ID'};
+        }, $vObject->select('VEVENT'));
+        $this->assertContains('20260915T090000Z', $recurrenceIds);
+    }
+
     function testFilterlessReportReturnsFullPrivateDataToOwner() {
         $privateEvent = implode("\r\n", [
             'BEGIN:VCALENDAR',
