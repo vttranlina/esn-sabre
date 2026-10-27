@@ -47,7 +47,7 @@ class PluginTest extends \ESN\CardDAV\PluginTestBase {
 
         $this->assertEquals(200, $response->status);
         $this->assertEquals($jsonResponse['uri'], 'user2subscription1');
-        $this->assertEquals($jsonResponse['{http://open-paas.org/contacts}source'], '/addressbooks/' . $this->userTestId1 . '/book1.json');
+        $this->assertEquals($jsonResponse['{http://open-paas.org/contacts}source'], '/addressbooks/' . $this->userTestId1 . '/book1');
 
         // Old subscriptions without share_access default to ACCESS_READ
         // ACL contains: read + write-properties

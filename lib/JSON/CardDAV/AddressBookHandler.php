@@ -51,7 +51,7 @@ class AddressBookHandler {
 
         return [207, [
             '_links' => [
-                'self' => [ 'href' => $baseUri . $nodePath . '.json' ]
+                'self' => [ 'href' => $baseUri . $nodePath ]
             ],
             '_embedded' => [
                 'dav:item' => $items

@@ -333,7 +333,7 @@ class Plugin extends \ESN\JSON\BasePlugin {
             $items[] = $this->getAddressBookDetail($addressBookPath, $addressBook, $options);
         }
 
-        $requestPath = $baseUri . $nodePath . '.json';
+        $requestPath = $baseUri . $nodePath;
         $result = [
             '_links' => [
                 'self' => [ 'href' => $requestPath ]
@@ -411,14 +411,14 @@ class Plugin extends \ESN\JSON\BasePlugin {
 
         $bookProps = $addressBook->getProperties($properties);
 
-        $addressBookHref = $baseUri . $nodePath . '.json';
+        $addressBookHref = $baseUri . $nodePath;
 
         // If there is a group address book, we need to ensure address book href contains group ID
         if (!Utils::isUserPrincipal($addressBook->getOwner())) {
             $ownerPrincipalExploded = explode('/', $addressBook->getOwner());
             $nodePathExploded = explode('/', $nodePath);
 
-            $addressBookHref = $baseUri . $nodePathExploded[0] . '/' . $ownerPrincipalExploded[2] . '/' . $nodePathExploded[2] . '.json';
+            $addressBookHref = $baseUri . $nodePathExploded[0] . '/' . $ownerPrincipalExploded[2] . '/' . $nodePathExploded[2];
         }
 
         $output = [
@@ -439,7 +439,7 @@ class Plugin extends \ESN\JSON\BasePlugin {
 
         if (isset($bookProps['{http://open-paas.org/contacts}source'])) {
             $sourcePath = $bookProps['{http://open-paas.org/contacts}source']->getHref();
-            $output['openpaas:source'] = $baseUri . $sourcePath . '.json';
+            $output['openpaas:source'] = $baseUri . $sourcePath;
         }
 
         return $output;
@@ -630,7 +630,7 @@ class Plugin extends \ESN\JSON\BasePlugin {
             $items[] = $cardItem;
         }
 
-        $requestPath = $baseUri . $request->getPath() . '.json';
+        $requestPath = $baseUri . $request->getPath();
 
         $result = [
             '_links' => [
@@ -792,7 +792,7 @@ class Plugin extends \ESN\JSON\BasePlugin {
 
         $result = [
             '_links' => [
-                'self' => [ 'href' => $baseUri . $selfPath . '.json' ]
+                'self' => [ 'href' => $baseUri . $selfPath ]
             ],
             '_embedded' => [ 'dav:item' => $items ]
         ];

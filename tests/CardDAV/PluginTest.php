@@ -421,7 +421,7 @@ class PluginTest extends PluginTestBase {
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1');
         $cards = $jsonResponse->{'_embedded'}->{'dav:item'};
         $this->assertEquals(count($cards), 4);
         $this->assertEquals($cards[0]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1/card1');
@@ -440,7 +440,7 @@ class PluginTest extends PluginTestBase {
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1');
         $cards = $jsonResponse->{'_embedded'}->{'dav:item'};
         $this->assertCount(1, $cards);
         $this->assertEquals($cards[0]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1/card3');
@@ -474,7 +474,7 @@ class PluginTest extends PluginTestBase {
         $first = $this->makeRequest('GET', $path);
         $this->assertSame(200, $first->status);
         $firstBody = json_decode($first->getBodyAsString());
-        $this->assertSame('/addressbooks/' . $this->userTestId1 . '/book1.json', $firstBody->{'_links'}->self->href);
+        $this->assertSame('/addressbooks/' . $this->userTestId1 . '/book1', $firstBody->{'_links'}->self->href);
         $this->assertObjectHasProperty('dav:syncToken', $firstBody);
         $this->assertNotEmpty($firstBody->next);
         $this->assertObjectNotHasProperty('next', $firstBody->{'_links'});
@@ -527,6 +527,7 @@ class PluginTest extends PluginTestBase {
         $this->assertSame(['card1', 'card2'], $firstCards);
         $this->assertObjectNotHasProperty('next', $firstBody);
         $this->assertStringContainsString('offset=2', $firstBody->{'_links'}->next->href);
+        $this->assertStringNotContainsString('.json', $firstBody->{'_links'}->next->href);
 
         $last = $this->makeRequest('GET', $firstBody->{'_links'}->next->href);
         $this->assertSame(200, $last->status);

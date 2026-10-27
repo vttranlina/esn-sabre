@@ -148,7 +148,7 @@ class CalendarObjectHandler {
 
         return [207, [
             '_links' => [
-                'self' => [ 'href' => $this->server->getBaseUri() . $nodePath . '.json']
+                'self' => [ 'href' => $this->server->getBaseUri() . $nodePath]
             ],
             '_embedded' => [ 'dav:item' => $items ]
         ]];
@@ -216,7 +216,7 @@ class CalendarObjectHandler {
      *
      * Response format:
      * {
-     *   "_links": {"self": {"href": "/calendars/userId/calendarId.json"}},
+     *   "_links": {"self": {"href": "/calendars/userId/calendarId"}},
      *   "_embedded": {
      *     "dav:item": [
      *       {
@@ -272,7 +272,7 @@ class CalendarObjectHandler {
 
         $result = [
             '_links' => [
-                'self' => [ 'href' => $baseUri . $nodePath . '.json' ]
+                'self' => [ 'href' => $baseUri . $nodePath ]
             ],
             '_embedded' => [
                 'dav:item' => $items
@@ -620,7 +620,7 @@ class CalendarObjectHandler {
 
         return [
             '_links' => [
-                'self' => [ 'href' => $baseUri . $parentNodePath . '.json']
+                'self' => [ 'href' => $baseUri . $parentNodePath]
             ],
             '_embedded' => $embedded
         ];

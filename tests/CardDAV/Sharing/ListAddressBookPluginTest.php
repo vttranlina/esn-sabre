@@ -47,8 +47,8 @@ class ListAddressBookPluginTest extends \ESN\CardDAV\PluginTestBase {
         $addressBooks = json_decode($response->getBodyAsString(), true)['_embedded']['dav:addressbook'];
 
         $this->assertCount(2, $addressBooks);
-        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[0]['uri'] . '.json', $addressBooks[0]['_links']['self']['href']);
-        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[1]['uri'] . '.json', $addressBooks[1]['_links']['self']['href']);
+        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[0]['uri'], $addressBooks[0]['_links']['self']['href']);
+        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[1]['uri'], $addressBooks[1]['_links']['self']['href']);
     }
 
     function testListSharedAddressBooksFilteredByShareOwner() {
@@ -63,7 +63,7 @@ class ListAddressBookPluginTest extends \ESN\CardDAV\PluginTestBase {
         $addressBooks = json_decode($response->getBodyAsString(), true)['_embedded']['dav:addressbook'];
 
         $this->assertCount(1, $addressBooks);
-        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[0]['uri'] . '.json', $addressBooks[0]['_links']['self']['href']);
+        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[0]['uri'], $addressBooks[0]['_links']['self']['href']);
     }
 
     function testListSharedAddressBooksFilteredByInviteStatus() {
@@ -78,6 +78,6 @@ class ListAddressBookPluginTest extends \ESN\CardDAV\PluginTestBase {
         $addressBooks = json_decode($response->getBodyAsString(), true)['_embedded']['dav:addressbook'];
 
         $this->assertCount(1, $addressBooks);
-        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[0]['uri'] . '.json', $addressBooks[0]['_links']['self']['href']);
+        $this->assertEquals('/addressbooks/' . $this->userTestId1 . '/' . $shareAddressBooks[0]['uri'], $addressBooks[0]['_links']['self']['href']);
     }
 }

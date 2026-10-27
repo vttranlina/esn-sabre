@@ -111,7 +111,7 @@ class CalendarHandler {
             }
         }
 
-        $requestPath = $baseUri . $nodePath . '.json';
+        $requestPath = $baseUri . $nodePath;
         $result = [
             '_links' => [
               'self' => [ 'href' => $requestPath ]
@@ -131,7 +131,7 @@ class CalendarHandler {
             $items = $this->listAllCalendarsWithReadRight($nodePath, $node, $withRights, $calendarTypeOptions, $withFreeBusy);
         }
 
-        $requestPath = $baseUri . $nodePath . '.json';
+        $requestPath = $baseUri . $nodePath;
         // Keep the JSON envelope even when no calendar matches the filters.
         $result = [
             '_links' => [
@@ -252,7 +252,7 @@ class CalendarHandler {
 
         $json = [
             '_links' => [
-                'self' => [ 'href' => $baseUri . $nodePath . '.json' ],
+                'self' => [ 'href' => $baseUri . $nodePath ],
             ]
         ];
 
@@ -292,7 +292,7 @@ class CalendarHandler {
 
             $sourceCalendarUri = $this->findOwnerCalendarUri($sourceCalendarOwner, $calendar->getCalendarId());
             if ($sourceCalendarUri !== null) {
-                return 'calendars/' . $sourceCalendarOwner . '/' . $sourceCalendarUri . '.json';
+                return 'calendars/' . $sourceCalendarOwner . '/' . $sourceCalendarUri;
             }
         }
 
@@ -369,7 +369,7 @@ class CalendarHandler {
 
         $json = [
             '_links' => [
-                'self' => [ 'href' => $baseUri . $nodePath . '.json' ],
+                'self' => [ 'href' => $baseUri . $nodePath ],
             ]
         ];
 

@@ -4,6 +4,31 @@ The ESN Frontend for SabreDAV adds a JSON REST api for common operations from
 the web frontend. All methods that return content will use the application/json
 or application/hal+json format.
 
+Responses use canonical DAV URLs without a `.json` suffix in their links and source properties.
+Legacy request URLs and subscription source hrefs with `.json` remain accepted.
+Use `Accept` to request the JSON representation.
+
+The following JSON responses emit links without the suffix, including when the
+request uses a legacy `.json` URL:
+
+| Method and canonical endpoint | Changed response fields |
+| --- | --- |
+| GET `/calendars/{homeId}` | Self href, embedded calendar/subscription hrefs, `calendarserver:delegatedsource`, and nested `calendarserver:source` hrefs |
+| GET `/calendars/{homeId}/{calendarId}` | Self href and delegated source when present |
+| GET `/calendars/{homeId}/{subscriptionId}` | Self href and nested source calendar hrefs |
+| REPORT `/calendars` | Self href of the multi-event response |
+| REPORT `/calendars/{homeId}` | Self href of the UID lookup response |
+| REPORT `/calendars/{homeId}/{calendarId-or-subscriptionId}` | Self href of query/sync responses; subscription queries may link to the source calendar |
+| GET `/addressbooks/{homeId}` | Self href, embedded address book hrefs, and `openpaas:source` |
+| GET `/addressbooks/{homeId}/{bookId}` | Self href and offset pagination's next href |
+| GET `/contacts/{userId}` | Self href of the aggregated contact listing |
+| REPORT `/addressbooks/{homeId}/{bookId}` | Self href of the sync response |
+| PROPFIND `/addressbooks/{homeId}/{bookId}` | `{http://open-paas.org/contacts}source` when requested on a shared/subscribed book |
+
+These paths also cover team/resource calendars and domain/group address books.
+Event and contact item hrefs keep their existing resource names (e.g. `.ics` and
+`.vcf`). Cursor pagination's `next` value remains an opaque token.
+
 ## Resources
 
 ### iTip processing request object
@@ -56,7 +81,7 @@ A calendar root collection, which contains the calendar homes.
 
 ```json
 {
-    "_links": { "self": { "href": "/calendars.json" } },
+    "_links": { "self": { "href": "/calendars" } },
     "_embedded": { "dav:home": [ <dav:home resources>... ] }
 }
 ```
@@ -67,7 +92,7 @@ A collection containing calendars.
 
 ```json
 {
-    "_links": { "self": { "href": "/calendars/{calendarHomeId}.json" } },
+    "_links": { "self": { "href": "/calendars/{calendarHomeId}" } },
     "_embedded": { "dav:calendar": [ <dav:calendar resources>... ] }
 }
 ```
@@ -79,7 +104,7 @@ and may be omitted on some requests.
 
 ```json
 {
-    "_links": { "self": { "href": "/path/to/calendar.json" } },
+    "_links": { "self": { "href": "/path/to/calendar" } },
     "_embedded": { "dav:item": [ <dav:item resources>... ] },
     "dav:name": "events",
     "caldav:description": null,
@@ -95,7 +120,7 @@ Describes the properties of a carddav address book.
 
 ```json
 {
-    "_links": { "self": { "href": "/path/to/book.json" } },
+    "_links": { "self": { "href": "/path/to/book" } },
     "_embedded": { "dav:item": [ <dav:item resources>... ] },
     "dav:syncToken": "sync-token"
 }
@@ -321,11 +346,11 @@ List address books in the addressbookHome that the current principal can read.
 
 ```json
 {
-    "_links":{"self":{"href":"/addressbooks/55f811e843f181db51af9a67.json"}},
+    "_links":{"self":{"href":"/addressbooks/55f811e843f181db51af9a67"}},
     "_embedded":{
         "dav:calendar":
         [
-            {"_links":{"self":{"href":"/addressbooks/55f811e843f181db51af9a67/readonly01.json"}},"dav:name":"","carddav:description":"","dav:acl":["dav:read"],"type":"social"}
+            {"_links":{"self":{"href":"/addressbooks/55f811e843f181db51af9a67/readonly01"}},"dav:name":"","carddav:description":"","dav:acl":["dav:read"],"type":"social"}
         ]
     }
 }
@@ -345,7 +370,7 @@ and `domainContacts`.
 user requests another user's contacts, 404 for an unknown user.
 
 The response embeds `dav:item` contacts. Each item's self link points to its original
-address book; the listing's self link points to `/contacts/{userId}.json`. A non-final
+address book; the listing's self link points to `/contacts/{userId}`. A non-final
 page also has a `next` cursor to pass as `after`. Keep the same `sort` and `order` on subsequent
 pages; changing either requires restarting without `after`. A cursor issued before
 order was supported is accepted only for `asc`.
@@ -443,7 +468,7 @@ contacts have status `404`. The new `sync-token` is returned for the next sync.
 
 ```json
 {
-    "_links": { "self": { "href": "/addressbooks/{addressbookHomeId}/{addressbookId}.json" } },
+    "_links": { "self": { "href": "/addressbooks/{addressbookHomeId}/{addressbookId}" } },
     "_embedded": {
         "dav:item": [
             { "_links": { "self": { "href": "/addressbooks/{...}/card1.vcf" } }, "status": 200 },

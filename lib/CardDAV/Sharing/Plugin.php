@@ -207,7 +207,7 @@ class Plugin extends \ESN\JSON\BasePlugin {
             if (isset($bookProps['{http://open-paas.org/contacts}source'])) {
                 $baseUri = $this->server->getBaseUri();
                 $sourcePath = $bookProps['{http://open-paas.org/contacts}source']->getHref();
-                $bookProps['{http://open-paas.org/contacts}source'] = $baseUri . $sourcePath . '.json';
+                $bookProps['{http://open-paas.org/contacts}source'] = $baseUri . $sourcePath;
             }
 
             $code = 200;

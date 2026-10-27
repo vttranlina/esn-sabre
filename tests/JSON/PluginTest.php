@@ -902,22 +902,22 @@ END:VCALENDAR
     private function checkCalendars($calendars) {
         $this->assertCount(count($this->user1Calendars['ownedCalendars']) + count($this->user1Calendars['otherCalendars']), $calendars);
 
-        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1.json');
+        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1');
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Calendar');
         $this->assertEquals($calendars[0]->{'caldav:description'}, 'description');
         $this->assertEquals($calendars[0]->{'calendarserver:ctag'}, 'http://sabre.io/ns/sync/4');
         $this->assertEquals($calendars[0]->{'apple:color'}, '#0190FFFF');
         $this->assertEquals($calendars[0]->{'apple:order'}, '2');
 
-        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1.json');
+        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1');
         $this->assertEquals($calendars[1]->{'dav:name'}, 'delegatedCalendar');
 
-        $this->assertEquals($calendars[2]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/user1Calendar2.json');
+        $this->assertEquals($calendars[2]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/user1Calendar2');
         $this->assertEquals($calendars[2]->{'dav:name'}, 'User1 Calendar2');
 
-        $this->assertEquals($calendars[3]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/subscription1.json');
+        $this->assertEquals($calendars[3]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/subscription1');
         $this->assertEquals($calendars[3]->{'dav:name'}, 'Subscription');
-        $this->assertEquals($calendars[3]->{'calendarserver:source'}->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1.json');
+        $this->assertEquals($calendars[3]->{'calendarserver:source'}->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1');
 
         return $calendars;
     }
@@ -970,8 +970,11 @@ END:VCALENDAR
         ], $jsonResponse);
     }
 
-    private function _testCalendarList($withRightsParam = null) {
-        $requestUri = $withRightsParam ? '/calendars/54b64eadf6d7d8e41d263e0f.json?withRights=' . $withRightsParam : '/calendars/54b64eadf6d7d8e41d263e0f.json';
+    private function _testCalendarList($withRightsParam = null, $suffix = '.json') {
+        $requestUri = '/calendars/54b64eadf6d7d8e41d263e0f' . $suffix;
+        if ($withRightsParam) {
+            $requestUri .= '?withRights=' . $withRightsParam;
+        }
         $request = \Sabre\HTTP\Sapi::createFromServerArray(array(
             'REQUEST_METHOD'    => 'GET',
             'HTTP_CONTENT_TYPE' => 'application/json',
@@ -982,9 +985,13 @@ END:VCALENDAR
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f');
 
         return $this->checkCalendars($jsonResponse->{'_embedded'}->{'dav:calendar'});
+    }
+
+    function testCalendarListWithoutJsonSuffix() {
+        $this->_testCalendarList(null, '');
     }
 
     function testCalendarList() {
@@ -1003,21 +1010,21 @@ END:VCALENDAR
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f');
 
         $calendars = $jsonResponse->{'_embedded'}->{'dav:calendar'};
 
         $expectedCount = count($this->user1Calendars['ownedCalendars']) + count($this->user1Calendars['otherCalendars']);
         $this->assertCount($expectedCount, $calendars);
 
-        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1.json');
+        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1');
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Calendar');
         $this->assertEquals($calendars[0]->{'caldav:description'}, 'description');
         $this->assertEquals($calendars[0]->{'calendarserver:ctag'}, 'http://sabre.io/ns/sync/4');
         $this->assertEquals($calendars[0]->{'apple:color'}, '#0190FFFF');
         $this->assertEquals($calendars[0]->{'apple:order'}, '2');
 
-        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1.json');
+        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1');
         $this->assertEquals($calendars[1]->{'dav:name'}, 'delegatedCalendar');
     }
 
@@ -1093,13 +1100,13 @@ END:VCALENDAR
         $jsonResponse = $this->_testFilteredCalendarList();
         $calendars = $jsonResponse->{'_embedded'}->{'dav:calendar'};
 
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f');
         $this->assertFalse(isset($calendars[1]->{'invite'}));
         $this->assertFalse(isset($calendars[1]->{'acl'}));
 
         $this->assertCount(count($this->user1Calendars['ownedCalendars']) + count($this->user1Calendars['otherCalendars']), $calendars);
 
-        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1.json');
+        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1');
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Calendar');
         $this->assertEquals($calendars[0]->{'caldav:description'}, 'description');
         $this->assertEquals($calendars[0]->{'calendarserver:ctag'}, 'http://sabre.io/ns/sync/4');
@@ -1107,17 +1114,17 @@ END:VCALENDAR
         $this->assertEquals($calendars[0]->{'apple:order'}, '2');
         $this->assertFalse(property_exists($calendars[0], 'calendarserver:delegatedsource'));
 
-        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1.json');
+        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1');
         $this->assertEquals($calendars[1]->{'dav:name'}, 'delegatedCalendar');
         $this->assertFalse(property_exists($calendars[1], 'calendarserver:delegatedsource'));
 
-        $this->assertEquals($calendars[2]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/user1Calendar2.json');
+        $this->assertEquals($calendars[2]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/user1Calendar2');
         $this->assertEquals($calendars[2]->{'dav:name'}, 'User1 Calendar2');
         $this->assertFalse(property_exists($calendars[2], 'calendarserver:delegatedsource'));
 
-        $this->assertEquals($calendars[3]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/subscription1.json');
+        $this->assertEquals($calendars[3]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/subscription1');
         $this->assertEquals($calendars[3]->{'dav:name'}, 'Subscription');
-        $this->assertEquals($calendars[3]->{'calendarserver:source'}->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1.json');
+        $this->assertEquals($calendars[3]->{'calendarserver:source'}->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1');
         $this->assertFalse(property_exists($calendars[3], 'calendarserver:delegatedsource'));
     }
 
@@ -1125,10 +1132,10 @@ END:VCALENDAR
         $jsonResponse = $this->_testFilteredCalendarList('true');
         $calendars = $jsonResponse->{'_embedded'}->{'dav:calendar'};
 
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f');
         $this->assertCount(count($this->user1Calendars['ownedCalendars']), $calendars);
 
-        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1.json');
+        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1');
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Calendar');
         $this->assertEquals($calendars[0]->{'caldav:description'}, 'description');
         $this->assertEquals($calendars[0]->{'calendarserver:ctag'}, 'http://sabre.io/ns/sync/4');
@@ -1136,7 +1143,7 @@ END:VCALENDAR
         $this->assertEquals($calendars[0]->{'apple:order'}, '2');
         $this->assertFalse(property_exists($calendars[0], 'calendarserver:delegatedsource'));
 
-        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1.json');
+        $this->assertEquals($calendars[1]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/delegatedCal1');
         $this->assertEquals($calendars[1]->{'dav:name'}, 'delegatedCalendar');
         $this->assertFalse(property_exists($calendars[1], 'calendarserver:delegatedsource'));
     }
@@ -1145,19 +1152,19 @@ END:VCALENDAR
         $jsonResponse = $this->_testFilteredCalendarList(null, 'true');
         $calendars = $jsonResponse->{'_embedded'}->{'dav:calendar'};
 
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f');
         $this->assertCount(1, $calendars);
 
-        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/subscription1.json');
+        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/subscription1');
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Subscription');
-        $this->assertEquals($calendars[0]->{'calendarserver:source'}->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1.json');
+        $this->assertEquals($calendars[0]->{'calendarserver:source'}->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1');
         $this->assertFalse(property_exists($calendars[0], 'calendarserver:delegatedsource'));
     }
 
     function testFilteredCalendarLisWithSharedNoResponseOnly() {
         $jsonResponse = $this->_testFilteredCalendarList(null, null, 'noresponse');
 
-        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0f.json', $jsonResponse->{'_links'}->self->href);
+        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0f', $jsonResponse->{'_links'}->self->href);
         $this->assertSame([], $jsonResponse->{'_embedded'}->{'dav:calendar'});
     }
 
@@ -1166,11 +1173,11 @@ END:VCALENDAR
 
         $calendars = $jsonResponse->{'_embedded'}->{'dav:calendar'};
 
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f');
         $this->assertCount(1, $calendars);
 
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Calendar');
-        $this->assertEquals($calendars[0]->{'calendarserver:delegatedsource'}, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1.json');
+        $this->assertEquals($calendars[0]->{'calendarserver:delegatedsource'}, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1');
     }
 
     /**
@@ -1277,7 +1284,7 @@ END:VCALENDAR
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1');
         $this->assertEquals($jsonResponse->{'dav:name'}, 'Calendar');
         $this->assertEquals($jsonResponse->{'caldav:description'}, 'description');
         $this->assertEquals($jsonResponse->{'calendarserver:ctag'}, 'http://sabre.io/ns/sync/4');
@@ -1296,7 +1303,7 @@ END:VCALENDAR
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0f/calendar1');
         $this->assertObjectNotHasProperty('_embedded', $jsonResponse);
         $this->assertEquals($jsonResponse->{'dav:name'}, 'Calendar');
     }
@@ -1570,7 +1577,7 @@ END:VCALENDAR
         $calendars = $jsonResponse->_embedded->{'dav:calendar'};
         $this->assertCount(1, $calendars);
 
-        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1.json');
+        $this->assertEquals($calendars[0]->{'_links'}->self->href, '/calendars/54b64eadf6d7d8e41d263e0e/publicCal1');
         $this->assertEquals($calendars[0]->{'dav:name'}, 'Calendar');
         $this->assertEquals($calendars[0]->{'caldav:description'}, 'description');
         $this->assertEquals($calendars[0]->{'calendarserver:ctag'}, 'http://sabre.io/ns/sync/2');
@@ -1590,7 +1597,7 @@ END:VCALENDAR
         $jsonResponse = json_decode($response->getBodyAsString());
 
         $this->assertEquals($response->status, 200);
-        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0f.json', $jsonResponse->{'_links'}->self->href);
+        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0f', $jsonResponse->{'_links'}->self->href);
         $this->assertSame([], $jsonResponse->{'_embedded'}->{'dav:calendar'});
     }
 
@@ -1629,7 +1636,7 @@ END:VCALENDAR
         $jsonResponse = json_decode($response2->getBodyAsString());
 
         $this->assertEquals($response2->status, 200);
-        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0d.json', $jsonResponse->{'_links'}->self->href);
+        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0d', $jsonResponse->{'_links'}->self->href);
         $this->assertSame([], $jsonResponse->{'_embedded'}->{'dav:calendar'});
     }
 
@@ -2275,6 +2282,7 @@ END:VCALENDAR
         $this->assertEquals(207, $response->status);
 
         $jsonResponse = json_decode($response->getBodyAsString());
+        $this->assertSame('/calendars/54b64eadf6d7d8e41d263e0f/calendar1', $jsonResponse->{'_links'}->self->href);
 
         // Should return all events
         $this->assertTrue(isset($jsonResponse->_embedded->{'dav:item'}));
@@ -2648,6 +2656,7 @@ END:VCALENDAR
         $this->assertEquals(207, $response->status);
 
         $jsonResponse = json_decode($response->getBodyAsString());
+        $this->assertSame('/addressbooks/54b64eadf6d7d8e41d263e0f/book1', $jsonResponse->{'_links'}->self->href);
 
         $this->assertTrue(isset($jsonResponse->_embedded->{'dav:item'}));
         $items = $jsonResponse->_embedded->{'dav:item'};

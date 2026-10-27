@@ -31,7 +31,7 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f');
 
         $addressBooks = $jsonResponse->{'_embedded'}->{'dav:addressbook'};
         $this->assertCount(0, $addressBooks);
@@ -48,13 +48,13 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f');
 
         $addressBooks = $jsonResponse->{'_embedded'}->{'dav:addressbook'};
         $this->assertCount(3, $addressBooks);
-        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1.json');
-        $this->assertEquals($addressBooks[1]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/collected.json');
-        $this->assertEquals($addressBooks[2]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/contacts.json');
+        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/book1');
+        $this->assertEquals($addressBooks[1]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/collected');
+        $this->assertEquals($addressBooks[2]->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f/contacts');
     }
 
     function testGetPersonalAddressBooksIncludeNumberOfContacts() {
@@ -68,7 +68,7 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/54b64eadf6d7d8e41d263e0f');
 
         $addressBooks = $jsonResponse->{'_embedded'}->{'dav:addressbook'};
         $this->assertCount(3, $addressBooks);
@@ -100,7 +100,7 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $this->assertEquals(200, $response->status);
         $addressBooks = json_decode($response->getBodyAsString(), true)['_embedded']['dav:addressbook'];
         $this->assertCount(1, $addressBooks);
-        $this->assertEquals('/addressbooks/' . $this->userTestId2 . '/user2book1.json', $addressBooks[0]['_links']['self']['href']);
+        $this->assertEquals('/addressbooks/' . $this->userTestId2 . '/user2book1', $addressBooks[0]['_links']['self']['href']);
         $this->assertEquals(4, $addressBooks[0]['numberOfContacts']);
     }
 
@@ -131,7 +131,7 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $addressBooks = $jsonResponse->{'_embedded'}->{'dav:addressbook'};
 
         $this->assertCount(1, $addressBooks);
-        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/' . $this->userTestId1 . '/publicBook.json');
+        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/' . $this->userTestId1 . '/publicBook');
         $this->assertEquals($addressBooks[0]->{'dav:name'}, 'Public book');
         $this->assertEquals($addressBooks[0]->{'carddav:description'}, 'Public book');
         $this->assertEquals($addressBooks[0]->{'dav:acl'}, ['dav:read', 'dav:write']);
@@ -192,8 +192,8 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $addressBooks = $jsonResponse->{'_embedded'}->{'dav:addressbook'};
 
         $this->assertCount(2, $addressBooks);
-        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/' . $userID . '/collected.json');
-        $this->assertEquals($addressBooks[1]->{'_links'}->self->href, '/addressbooks/' . $userID . '/contacts.json');
+        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/' . $userID . '/collected');
+        $this->assertEquals($addressBooks[1]->{'_links'}->self->href, '/addressbooks/' . $userID . '/contacts');
     }
 
     function testGetSubscribedAddressBooks() {
@@ -218,11 +218,11 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
         $response = $this->request($request);
         $jsonResponse = json_decode($response->getBodyAsString());
         $this->assertEquals($response->status, 200);
-        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/' . $this->userTestId2 . '.json');
+        $this->assertEquals($jsonResponse->{'_links'}->self->href, '/addressbooks/' . $this->userTestId2);
         $addressBooks = $jsonResponse->{'_embedded'}->{'dav:addressbook'};
         $this->assertCount(1, $addressBooks);
 
-        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/' . $this->userTestId2 . '/user2Subscription1.json');
+        $this->assertEquals($addressBooks[0]->{'_links'}->self->href, '/addressbooks/' . $this->userTestId2 . '/user2Subscription1');
         $this->assertEquals($addressBooks[0]->{'dav:name'}, 'user2Subscription1');
 
         // getAddressBookAcl() returns the LAST privilege for a given principal
@@ -234,7 +234,7 @@ class GetAddressBooksTest extends \ESN\CardDAV\PluginTestBase {
             )
         );
 
-        $this->assertEquals($addressBooks[0]->{'openpaas:source'}, '/addressbooks/' . $this->userTestId1 . '/book1.json');
+        $this->assertEquals($addressBooks[0]->{'openpaas:source'}, '/addressbooks/' . $this->userTestId1 . '/book1');
     }
 
     function testGetSubscribedAddressBooksReturnNumberOfContactsAsNull() {

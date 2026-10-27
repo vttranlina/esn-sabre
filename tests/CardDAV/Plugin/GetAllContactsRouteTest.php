@@ -17,21 +17,29 @@ class GetAllContactsRouteTest extends \ESN\CardDAV\PluginTestBase {
         $this->server->addPlugin(new \ESN\JSON\Plugin('json'));
     }
 
-    function testGetAllContactsUsesDedicatedPathAndKeepsCardLinks() {
-        $response = $this->makeRequest('GET', '/contacts/' . $this->userTestId1 . '.json?sort=fn&limit=2');
+    #[DataProvider('requestSuffixes')]
+    function testGetAllContactsUsesDedicatedPathAndKeepsCardLinks($suffix) {
+        $response = $this->makeRequest('GET', '/contacts/' . $this->userTestId1 . $suffix . '?sort=fn&limit=2');
 
         $this->assertEquals(200, $response->status);
         $body = json_decode($response->getBodyAsString());
-        $this->assertEquals('/contacts/' . $this->userTestId1 . '.json', $body->{'_links'}->self->href);
+        $this->assertEquals('/contacts/' . $this->userTestId1, $body->{'_links'}->self->href);
         $this->assertCount(2, $body->{'_embedded'}->{'dav:item'});
         $this->assertStringStartsWith('/addressbooks/' . $this->userTestId1 . '/', $body->{'_embedded'}->{'dav:item'}[0]->{'_links'}->self->href);
         $this->assertNotEmpty($body->next);
 
-        $next = $this->makeRequest('GET', '/contacts/' . $this->userTestId1 . '.json?sort=fn&limit=2&after=' . urlencode($body->next));
+        $next = $this->makeRequest('GET', $body->{'_links'}->self->href . '?sort=fn&limit=2&after=' . urlencode($body->next));
         $this->assertEquals(200, $next->status);
         $nextBody = json_decode($next->getBodyAsString());
         $this->assertCount(2, $nextBody->{'_embedded'}->{'dav:item'});
         $this->assertNotEquals($body->{'_embedded'}->{'dav:item'}[0]->{'_links'}->self->href, $nextBody->{'_embedded'}->{'dav:item'}[0]->{'_links'}->self->href);
+    }
+
+    static function requestSuffixes() {
+        return [
+            'canonical URL' => [''],
+            'legacy JSON URL' => ['.json']
+        ];
     }
 
     function testAddressBookNamedAllContactsRemainsReachable() {
