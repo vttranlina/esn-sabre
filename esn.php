@@ -192,6 +192,9 @@ $server->addPlugin($freeBusyPlugin);
 $caldavPlugin = new ESN\CalDAV\Plugin();
 $server->addPlugin($caldavPlugin);
 
+// Booking metadata is writable only by authenticated server flows.
+$server->addPlugin(new ESN\CalDAV\PublicAgendaMetadataPlugin());
+
 // RFC 7986 CONFERENCE property derived from X-OPENPAAS-VIDEOCONFERENCE
 $server->addPlugin(new ESN\CalDAV\VideoConferencePlugin(
     \ESN\Utils\Env::getString('TRUSTED_VIDEO_URL_BASE')

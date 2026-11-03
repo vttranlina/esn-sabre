@@ -654,6 +654,10 @@ class EsnTest extends \PHPUnit\Framework\TestCase {
         putenv('SABRE_IMPERSONATION_ENABLED=true');
 
         $esnauth = new EsnMock('http://localhost:8080/');
+        $adminAuthentications = [];
+        $esnauth->getServer()->on('auth:success', function($tenant, $adminImpersonation) use (&$adminAuthentications) {
+            $adminAuthentications[] = $adminImpersonation;
+        });
 
         // Insert a user into the db
         $esnDb = $esnauth->getDb();
@@ -692,6 +696,35 @@ class EsnTest extends \PHPUnit\Framework\TestCase {
 
         $this->assertTrue($rv);
         $this->assertEquals('principals/users/999999999999999999999999', $msg);
+        $this->assertSame([true], $adminAuthentications);
+
+        // A rejected request emits no authorization, and the next ordinary login
+        // must not inherit the previous impersonation's server-write privilege.
+        $request = \Sabre\HTTP\Sapi::createFromServerArray([
+            'PHP_AUTH_USER' => 'admin&user@example.com',
+            'PHP_AUTH_PW' => 'wrong-password',
+            'REQUEST_URI' => '/',
+            'REQUEST_METHOD' => 'GET'
+        ]);
+        $this->assertFalse($esnauth->check($request, $response)[0]);
+        $this->assertSame([true], $adminAuthentications);
+
+        $previousLdapEmail = $GLOBALS['__ldap_mock_email'];
+        $GLOBALS['__ldap_mock_enabled'] = true;
+        $GLOBALS['__ldap_mock_email'] = 'user@example.com';
+        try {
+            $request = \Sabre\HTTP\Sapi::createFromServerArray([
+                'PHP_AUTH_USER' => 'user@example.com',
+                'PHP_AUTH_PW' => 'password',
+                'REQUEST_URI' => '/',
+                'REQUEST_METHOD' => 'GET'
+            ]);
+            $this->assertTrue($esnauth->check($request, $response)[0]);
+            $this->assertSame([true, false], $adminAuthentications);
+        } finally {
+            $this->resetLdapMock();
+            $GLOBALS['__ldap_mock_email'] = $previousLdapEmail;
+        }
     }
 
     function testAdminImpersonationEnabledWithWrongPassword() {

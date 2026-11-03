@@ -39,7 +39,6 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
     private const PRESERVABLE_RECIPIENT_LOCAL_PROPERTIES = ['VALARM', 'TRANSP', 'CLASS'];
     private const PRESERVABLE_RECIPIENT_LOCAL_PROPERTIES_WITH_MANAGED_ALARMS = ['TRANSP', 'CLASS'];
     private const FORBIDDEN_ATTENDEE_CHANGE_PROPERTIES = ['DTSTART', 'DTEND', 'LOCATION', 'SUMMARY', 'ORGANIZER'];
-    private const PUBLIC_AGENDA_METADATA_PROPERTIES = ['X-PUBLICLY-CREATED', 'X-PUBLICLY-CREATOR', 'X-PUBLICLY-DELETED', 'X-PUBLICLY-CANCELLED-BY', 'X-OPENPAAS-BOOKING-LINK'];
     private const ENFORCE_RFC_6638_ENV = 'SABRE_ENFORCE_RFC_6638';
     private const EMAIL_VALARM_RECIPIENT_SCHEDULING_ENV = 'SABRE_EMAIL_VALARM_RECIPIENT_SCHEDULING';
     private const ORGANIZER_MANAGED_VALARM_UID_PREFIX = 'alarm-organizer-';
@@ -124,6 +123,16 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
         $objectNode = $loaded['objectNode'];
         $oldICalendarData = $loaded['calendarData'];
         $currentObject = $loaded['calendarObject'];
+
+        // Explicit /itip and ITIP requests carry client-authored data. Internal
+        // scheduling messages already carry metadata from the protected source event.
+        $metadataPlugin = $this->server->getPlugin('caldav-public-agenda-metadata');
+        $request = $this->server->httpRequest;
+        $clientSubmitted = $request->getMethod() === 'ITIP'
+            || ($request->getMethod() === 'POST' && $request->getPath() === 'itip');
+        if ($clientSubmitted && $metadataPlugin) {
+            $metadataPlugin->filterCalendar($iTipMessage->message, $currentObject);
+        }
 
         if ($currentObject) {
             $this->normalizeIncomingReplyMessage($iTipMessage, $currentObject);
@@ -941,7 +950,7 @@ class Plugin extends \Sabre\CalDAV\Schedule\Plugin {
                 continue;
             }
 
-            foreach (self::PUBLIC_AGENDA_METADATA_PROPERTIES as $propertyName) {
+            foreach (VObjectPropertyRegistry::PUBLIC_AGENDA_METADATA_PROPERTIES as $propertyName) {
                 if ($messageEvent->select($propertyName)) {
                     continue;
                 }

@@ -7,6 +7,8 @@ use Sabre\VObject\Property\Text;
 use Sabre\VObject\Property\Uri;
 
 class VObjectPropertyRegistry {
+    const PUBLIC_AGENDA_METADATA_PROPERTIES = ['X-PUBLICLY-CREATED', 'X-PUBLICLY-CREATOR', 'X-PUBLICLY-DELETED', 'X-PUBLICLY-CANCELLED-BY', 'X-OPENPAAS-BOOKING-LINK'];
+
     // Register extension properties here so VObject parses them with the right value class.
     const array ICALENDAR_PROPERTY_TYPES = [
         'X-PUBLICLY-CREATED' => Boolean::class,

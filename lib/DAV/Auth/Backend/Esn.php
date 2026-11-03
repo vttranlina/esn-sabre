@@ -22,6 +22,8 @@ class Esn implements \Sabre\DAV\Auth\Backend\BackendInterface {
     protected $principalBackend;
     protected $server;
     protected bool $debug;
+    // Authentication provenance for trusted server writes, without changing the impersonated identity.
+    private bool $adminImpersonation = false;
 
     /**
      * Authentication Realm.
@@ -149,8 +151,11 @@ class Esn implements \Sabre\DAV\Auth\Backend\BackendInterface {
         $user = trim($username);
         if ($this->impersonationEnabled()) {
             $impersonationResult = $this->attemptAdminImpersonation($user, $password);
-            if ($impersonationResult !== null)
-                return $this->doImpersonation($impersonationResult);
+            if ($impersonationResult !== null) {
+                $tenant = $this->doImpersonation($impersonationResult);
+                $this->adminImpersonation = true;
+                return $tenant;
+            }
         }
 
         if (Env::getString('LDAP_USERNAME_MODE') === 'username') {
@@ -429,7 +434,7 @@ class Esn implements \Sabre\DAV\Auth\Backend\BackendInterface {
     private function checkSuccess(AuthTenant $tenant) {
         $this->currentTenant = $tenant;
         $principal = $tenant->getPrincipal();
-        $this->server->emit("auth:success", [$tenant]);
+        $this->server->emit("auth:success", [$tenant, $this->adminImpersonation]);
         $msg = $tenant->tenantType === TenantType::Technical ? $this->technicalPrincipal : (string) $principal;
         return [true, $msg];
     }
@@ -461,6 +466,7 @@ class Esn implements \Sabre\DAV\Auth\Backend\BackendInterface {
      * @return array
      */
     function check(\Sabre\HTTP\RequestInterface $request, \Sabre\HTTP\ResponseInterface $response): array {
+        $this->adminImpersonation = false;
         try {
             $tenant = $this->authenticateRequest($request, $response);
             return $this->checkSuccess($tenant);

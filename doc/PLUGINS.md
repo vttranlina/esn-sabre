@@ -2,6 +2,28 @@
 
 This page aims at documenting plugins that are poart of esn-sabre as well as their motivations.
 
+## Public agenda metadata
+
+`ESN\CalDAV\PublicAgendaMetadataPlugin` makes `X-PUBLICLY-CREATED`,
+`X-PUBLICLY-CREATOR`, `X-PUBLICLY-DELETED`, `X-PUBLICLY-CANCELLED-BY` and
+`X-OPENPAAS-BOOKING-LINK` server-managed.
+
+On client iCalendar/jCal writes (including imports and explicit iTIP submissions),
+the stored values and parameters replace client values before scheduling. Omitting
+a property preserves it; adding one that was not stored has no effect. Other event
+edits are accepted normally. Existing recurrence overrides keep their own metadata;
+new overrides inherit the stored series metadata.
+
+Verified administrator impersonation and authenticated technical tenants may manage
+these properties, allowing the side service's booking and cancellation flows to
+continue. User Basic authentication and user JWTs do not grant that permission.
+Internally generated scheduling messages retain the protected source metadata.
+
+Client COPY of a booking and COPY/MOVE over an existing booking return 403, since
+these operations bypass the normal write filters. The policy allows moves to an
+unused path, retaining metadata; existing DAV permissions and MOVE restrictions
+still apply. Deleting an event remains governed by its existing DAV permissions.
+
 ## Real time plugins
 
 Those plugin publishes RabbitMQ messages upon occurence of specific actions performed on top of the DAV server.

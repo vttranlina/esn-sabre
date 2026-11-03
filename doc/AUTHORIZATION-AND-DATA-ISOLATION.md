@@ -78,6 +78,13 @@ domain ID, and tenant type. This context is propagated on `auth:success` to the
 principal and calendar backends. Authorization code must not run with a missing
 or stale tenant context.
 
+`auth:success` also supplies whether the request successfully authenticated with
+the administrator impersonation credential. This provenance does not change the
+impersonated identity or bypass its existing resource/tenant checks. Together with
+the technical tenant type, it permits server-managed public agenda metadata writes;
+ordinary owners and delegates cannot author that metadata. See the
+[public agenda metadata policy](PLUGINS.md#public-agenda-metadata).
+
 ### Administrator impersonation
 
 Impersonation is a trusted authentication boundary, not a general ACL bypass:
